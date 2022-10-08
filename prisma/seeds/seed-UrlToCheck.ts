@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const URLS: string[] = ['https://ya.ru', 'https://google.ru', 'some_wrong_url'];
+const URLS: string[] = ['ya.ru', 'https://google.ru/?soneVal', 'some_wrong_url', 'ws://google.ru/', 'ftp://some.store.com'];
 
 async function main() {
 	console.log('Starting to SEED the data base');

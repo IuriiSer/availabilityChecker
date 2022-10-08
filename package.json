@@ -7,13 +7,14 @@
     "start:dev": "nodemon",
     "build": "rimraf ./build && tsc",
     "start": "npm run build && node build/app.js",
-    "init:db": "npx prisma migrate dev --name init\nnode ./prisma/seeds/seed-UrlToCheck.ts"
+    "init:db": "npx prisma migrate dev --name init\nnpx ts-node ./prisma/seeds/seed-UrlToCheck.ts"
   },
   "keywords": [],
   "author": "yusergeevi4@gmail.com",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^18.8.3",
+    "@types/valid-url": "^1.0.3",
     "@typescript-eslint/eslint-plugin": "^5.39.0",
     "eslint": "^8.25.0",
     "eslint-config-standard-with-typescript": "^23.0.0",
@@ -28,6 +29,7 @@
   },
   "dependencies": {
     "@prisma/client": "^4.4.0",
-    "dotenv-expand": "^9.0.0"
+    "dotenv-expand": "^9.0.0",
+    "valid-url": "^1.0.9"
   }
 }
