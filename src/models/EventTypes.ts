@@ -1,6 +1,5 @@
 export enum EventTypes {
   // common types
-	Exit = 'EXIT',
 	Log = 'LOG',
 	WorngUrl = 'WRONG_URL',
 	NotUrl = 'NOT_URL',
