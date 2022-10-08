@@ -7,33 +7,36 @@ async function app() {
 	try {
 		const events = new EventEmitter();
 		const urlService = new UrlService(events);
-		const logService = new LogService(events);
+		const logService = new LogService();
+		let isErr = false;
 
-		events.on(EventTypes.Exit, async () => {
-			process.exit(0);
+		events.on(EventTypes.Log, (message: string) => {
+			if (isErr) return;
+			logService.addTask({ status: EventTypes.Ok, message });
 		});
 
-		events.on(EventTypes.Log, async (message: string, data?: any) => {
-			logService.write(EventTypes.Ok, message);
-			console.log(`${message}\n`);
+		events.on(EventTypes.Error, (message: string, err?: string) => {
+			if (isErr) return;
+      isErr = true;
+			logService.addTask({ status: EventTypes.Error, message, err });
 		});
 
-		events.on(EventTypes.WorngUrl, async (url: string) => {
+		events.on(EventTypes.WorngUrl, (url: string) => {
+			if (isErr) return;
 			const message = `Wrong format for URL -> '${url}'`;
-			logService.write(EventTypes.Warning, message);
-			console.log(`${message}\n`);
+			logService.addTask({ status: EventTypes.Warning, message });
 		});
 
-		events.on(EventTypes.NotUrl, async (url: string) => {
+		events.on(EventTypes.NotUrl, (url: string) => {
+			if (isErr) return;
 			const message = `URL looks like a not real url -> '${url}'. It will be skipped.`;
-			logService.write(EventTypes.Warning, message);
-			console.log(`${message}\n`);
+			logService.addTask({ status: EventTypes.Warning, message });
 		});
 
-		events.on(EventTypes.UrlInCheck, async (url: string) => {
+		events.on(EventTypes.UrlInCheck, (url: string) => {
+			if (isErr) return;
 			const message = `URL '${url}' is already il list for checks. It will be skipped.`;
-			logService.write(EventTypes.Warning, message);
-			console.log(`${message}\n`);
+			logService.addTask({ status: EventTypes.Warning, message });
 		});
 
 		await logService.init();

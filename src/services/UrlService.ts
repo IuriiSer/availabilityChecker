@@ -23,7 +23,6 @@ class UrlService {
 		try {
 			this._eHandler.emit(EventTypes.Log, 'Start getting URLS from the data base');
 			const rawUrls = await prisma.urlToCheck.findMany();
-
 			if (!Array.isArray(rawUrls))
 				throw new Error('Something with the data base. URLS should be an array');
 
@@ -54,12 +53,12 @@ class UrlService {
       return this.urls;
 
     } catch (err) {
-			const message = 'Something went wrong. Exit programm.';
+			const message = 'Something went wrong during getting urls to check. Exit programm.';
 			if (err instanceof Error) {
-				this._eHandler.emit(EventTypes.Exit, `${message} Please, check logs.`, err.message);
+				this._eHandler.emit(EventTypes.Error, `${message} Check logs.`, err.message);
         return null;
 			}
-      this._eHandler.emit(EventTypes.Exit, message);
+      this._eHandler.emit(EventTypes.Error, message);
       return null;
 		}
 	}
