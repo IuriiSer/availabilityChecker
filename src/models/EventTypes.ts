@@ -1,11 +1,13 @@
 export enum EventTypes {
-  // common types
+	// common types
 	Log = 'LOG',
+	CheckUrl = 'CHECK_URL',
 	WorngUrl = 'WRONG_URL',
 	NotUrl = 'NOT_URL',
-  UrlInCheck = 'URL_IN_CHECK',
+	UrlAlreadyInCheck = 'URL_IN_CHECK',
+	ErrorFatal = 'ERROR_FATAL',
 
-  // types for LOGS
+	// types for LOGS
 	Ok = 'OK',
 	Warning = 'WARNING',
 	Error = 'ERROR',
