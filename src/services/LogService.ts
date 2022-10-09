@@ -1,22 +1,18 @@
-import EventEmitter from 'node:events';
+import { existsSync } from 'node:fs';
 import { mkdir, appendFile } from 'node:fs/promises';
 import { EventTypes } from '../models/EventTypes';
-
-type Task = {
-	status: EventTypes;
-	message: string;
-	err?: string;
-};
+import { LogTask } from '../models/LogTask';
 
 class LogService {
-	private taskStack: Task[] = [];
-	private isInWork: Boolean = false;
+	private taskStack: LogTask[] = [];
+	private isInWork: boolean = false;
 	private lineNumber: number = 0;
-	private PATH_TO_FOLDER: string = process.env['PATH_TO_LOGS_FOLDER'] || './logs';
+	private PATH_TO_FOLDER: string = process.env['PATH_TO_LOGS_FOLDER'] || 'logs';
 	private FILE_NAME: string = `${new Date().toISOString()}.txt`;
-	private PATH_TO_FILE: string = `${this.PATH_TO_FOLDER}/${this.FILE_NAME}`;
+	private PATH_TO_FILE: string = `./${this.PATH_TO_FOLDER}/${this.FILE_NAME}`;
+	private isActive: boolean = true;
 
-	public async init() {
+	public async init(): Promise<void> {
 		try {
 			await this.initFolder();
 			await this.initFile();
@@ -25,19 +21,25 @@ class LogService {
 		}
 	}
 
-	public addTask(task: Task) {
+	public addTask(task: LogTask): void {
 		this.taskStack.push(task);
-		if (this.isInWork) return;
-		this.startLogProcessing();
+		if (!this.isInWork) this.startProcessing();
 	}
 
-	private async startLogProcessing() {
+	private async startProcessing(): Promise<void> {
 		this.isInWork = true;
 		let taskInd = 0;
 
 		while (this.taskStack.length > taskInd) {
-			const task = this.taskStack[taskInd];
-			await this.write(task);
+			const { err, message, status } = this.taskStack[taskInd];
+			const toWrite = this.getMessage({ status, message });
+			this.writeToConsole(toWrite);
+			await this.writeToFile(toWrite);
+			if (err) {
+				const errToWrite = this.getMessage({ status: EventTypes.Error, message: '', err });
+				await this.writeToFile(errToWrite);
+				if (this.taskStack[taskInd].status === EventTypes.ErrorFatal) process.exit(1);
+			}
 			taskInd += 1;
 		}
 
@@ -46,50 +48,71 @@ class LogService {
 		this.isInWork = false;
 	}
 
-	private async write(task: Task) {
-		try {
-			const { status, message, err } = task;
-			let toWrite = `${(this.lineNumber += 1)} - ${status} - ${message}`;
-      console.log(toWrite);
-      if (err) toWrite = `${toWrite}\n${this.lineNumber} - ${err}`
-			await appendFile(this.PATH_TO_FILE, `${toWrite}\n`);
-		} catch (err) {
-      const message = 'Can`t write message to the log file';
-			if (err instanceof Error) {
-				console.log(`${EventTypes.Error} -> ${message}\n${err.message}\n`);
-        return;
-      }
-			console.log(`${EventTypes.Error} -> ${message}\n`);
-    }
+	private getMessage(task: LogTask): string {
+		if (task.err) {
+			return `${this.lineNumber} - ${task.status} - ${task.err}`;
+		}
+		return `${(this.lineNumber += 1)} - ${task.status} - ${task.message}`;
 	}
 
-	private async initFolder() {
+	private async writeToFile(message: string): Promise<void> {
 		try {
-			await mkdir(this.PATH_TO_FOLDER, { recursive: false });
+			if (!this.isActive) return;
+			await appendFile(this.PATH_TO_FILE, `${message}\n`);
 		} catch (err) {
-			const message = 'Can`t create folder for logs';
+			this.isActive = false;
+			const message = this.getMessage({
+				status: EventTypes.Error,
+				message: 'Can`t write to the log file',
+			});
 			if (err instanceof Error) {
-				if (err.message.includes('EEXIST')) return;
-				console.log(`${EventTypes.Error} -> ${message}\n${err.message}`);
-				process.exit(1);
+				console.log(message);
+				console.log(this.getMessage({ status: EventTypes.Error, message: '', err: err.message }));
+				return;
 			}
-			console.log(`${EventTypes.Error} -> ${message}\n`);
-			process.exit(1);
+			console.log(message);
 		}
 	}
 
-	private async initFile() {
+	private writeToConsole(message: string): void {
+		console.log(message);
+	}
+
+	private async initFolder(): Promise<void> {
+		try {
+			if (!existsSync(this.PATH_TO_FOLDER)) {
+				await mkdir(this.PATH_TO_FOLDER, { recursive: false });
+			}
+		} catch (err) {
+			this.isActive = false;
+			const message = this.getMessage({
+				status: EventTypes.Error,
+				message: 'Can`t create folder for logs',
+			});
+			if (err instanceof Error) {
+				console.log(message);
+				console.log(this.getMessage({ status: EventTypes.Error, message: '', err: err.message }));
+				return;
+			}
+			console.log(message);
+		}
+	}
+
+	private async initFile(): Promise<void> {
 		try {
 			await appendFile(this.PATH_TO_FILE, `Log from ${new Date().toString()}\n\n`);
 		} catch (err) {
-			const message = 'Can`t create file for logs';
+			this.isActive = false;
+			const message = this.getMessage({
+				status: EventTypes.Error,
+				message: 'Can`t create file for logs',
+			});
 			if (err instanceof Error) {
-				if (err.message.includes('EEXIST')) return;
-				console.log(`${EventTypes.Error} -> ${message}\n${err.message}`);
-				process.exit(1);
+				console.log(message);
+				console.log(this.getMessage({ status: EventTypes.Error, message: '', err: err.message }));
+				return;
 			}
-			console.log(`${EventTypes.Error} -> ${message}\n`);
-			process.exit(1);
+			console.log(message);
 		}
 	}
 }
