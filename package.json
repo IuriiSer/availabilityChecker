@@ -30,6 +30,8 @@
   "dependencies": {
     "@prisma/client": "^4.4.0",
     "dotenv-expand": "^9.0.0",
+    "fast-csv": "^4.3.6",
+    "node-fetch": "^3.2.10",
     "valid-url": "^1.0.9"
   }
 }
