@@ -6,7 +6,8 @@
 
 # in terminal
 1. npm install
-2. npm run init:db
+2. change .envTamplate to -> .env and change values to yours
+3. npm run init:db
     -> create and seed db
 3. - OR
    - npm run dev 
