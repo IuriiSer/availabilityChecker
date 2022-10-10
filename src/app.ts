@@ -5,61 +5,89 @@ import UrlService from './services/UrlService';
 import CheckService from './services/CheckService';
 import { Url } from './models/UrlTypes';
 import { CsvService } from './services/CsvService';
+import { CsvData } from './models/CsvData';
 
-
+// Init all Services
+// and start UrlService work
+// Adding events for app work
 async function app() {
 	try {
+		const services: { [obj: string]: any } = {};
 		const events = new EventEmitter();
-		const urlService = new UrlService(events);
-		const checkService = new CheckService(events);
-		const logService = new LogService();
-		const csvService = new CsvService(events);
-		let isErr = false;
+		services.url = new UrlService(events);
+		services.check = new CheckService(events);
+		services.log = new LogService(events);
+		services.csv = new CsvService(events);
+		let isFatalErr = false;
+
 		events.setMaxListeners(20);
+
 		events.on(EventTypes.Log, (message: string) => {
-			if (isErr) return;
-			logService.addTask({ status: EventTypes.Ok, message });
+			if (isFatalErr) return;
+			services.log.addTask({ status: EventTypes.Ok, message });
 		});
 
 		events.on(EventTypes.Error, (message: string, err?: string) => {
-			if (isErr) return;
-			logService.addTask({ status: EventTypes.Error, message, err });
+			if (isFatalErr) return;
+			services.log.addTask({ status: EventTypes.Error, message, err });
 		});
 
 		events.on(EventTypes.ErrorFatal, (message: string, err?: string) => {
-			if (isErr) return;
-			isErr = true;
-			logService.addTask({ status: EventTypes.ErrorFatal, message, err });
+			if (isFatalErr) return;
+			isFatalErr = true;
+			services.log.addTask({ status: EventTypes.ErrorFatal, message, err });
 		});
 
 		events.on(EventTypes.WorngUrl, (url: Url) => {
-			if (isErr) return;
+			if (isFatalErr) return;
 			const message = `Wrong format for URL -> '${url}'`;
-			logService.addTask({ status: EventTypes.Warning, message });
+			services.log.addTask({ status: EventTypes.Warning, message });
 		});
 
 		events.on(EventTypes.NotUrl, (url: Url) => {
-			if (isErr) return;
+			if (isFatalErr) return;
 			const message = `URL looks like a not real url -> '${url}'. It will be skipped.`;
-			logService.addTask({ status: EventTypes.Warning, message });
+			services.log.addTask({ status: EventTypes.Warning, message });
 		});
 
 		events.on(EventTypes.UrlAlreadyInCheck, (url: Url) => {
-			if (isErr) return;
+			if (isFatalErr) return;
 			const message = `URL '${url}' is already il list for checks. It will be skipped.`;
-			logService.addTask({ status: EventTypes.Warning, message });
+			services.log.addTask({ status: EventTypes.Warning, message });
 		});
 
 		events.on(EventTypes.CheckUrl, (url: Url) => {
-			if (isErr) return;
-			checkService.addTask(url);
+			if (isFatalErr) return;
+			services.check.addTask(url);
 		});
 
-		await logService.init();
-		await csvService.init();
-		urlService.getUrlsToCheck();
-	} catch (e) {
-		console.error(e);
+		events.on(EventTypes.CsvWrite, (action: EventTypes, data: CsvData) => {
+			if (isFatalErr) return;
+			services.csv.addTask({ action, data });
+		});
+
+		events.on(EventTypes.Finish, () => {
+			let statusSum = true;
+			for (const service in services) {
+				if (services[service].isInWork) {
+					statusSum = false;
+					return;
+				}
+			}
+
+			if (statusSum) {
+				console.log('Programm finished to work');
+				process.exit(0);
+			}
+		});
+
+		await services.log.init();
+		await services.csv.init();
+		services.url.getUrlsToCheck();
+	} catch (err) {
+		console.log('Something went wrong');
+		if (err instanceof Error) console.log(err.message);
+		process.exit(1);
 	}
 }
 

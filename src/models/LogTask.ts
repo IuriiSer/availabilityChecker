@@ -1,4 +1,4 @@
-import { EventTypes } from "./EventTypes";
+import { EventTypes } from './EventTypes';
 
 export type LogTask = {
 	status: EventTypes;

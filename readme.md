@@ -13,3 +13,14 @@
       -> run dev mode with nodemon
    - npm run start
       -> build app and run it
+
+# Пояснение к заданию
+Реализован независимые механизмы 
+- Логирования, LogService, 
+- Получению url для проверки, CheckService,
+- Работы с csv таблицей, CsvService,
+- Обработчика url, UrlService,
+
+## Особенности 
+Сервисы LogService, CheckService, CsvService имею стек обработки и работают пока есть задания. Все задания выполняются асинхронно
+Сервис UrlService получает ссылки без пагинации, обрабатывает их асинхронно
