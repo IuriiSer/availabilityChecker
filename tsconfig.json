@@ -11,5 +11,5 @@
 		"esModuleInterop": true,
 		"resolveJsonModule": true
 	},
-	"exclude": ["prisma"]
+	"exclude": ["./prisma/seeds/seed-UrlToCheck.ts"]
 }
