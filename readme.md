@@ -4,7 +4,7 @@
 
 # Init project
 
-# in terminal
+**in terminal**
 1. npm install
 2. change .envTamplate to -> .env and change values to yours
 3. npm run init:db
