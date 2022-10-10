@@ -1,16 +1,31 @@
+import EventEmitter from 'node:events';
 import { existsSync } from 'node:fs';
 import { mkdir, appendFile } from 'node:fs/promises';
 import { EventTypes } from '../models/EventTypes';
 import { LogTask } from '../models/LogTask';
 
+// LogService can show logs in a console and can write logs in a log file
+// it init folder and file before work
+// if it can`t init file/folder -> show logs only in the console
+// service have task order and work until it have any task
+// in fatal error case -> service will stop process with exit status (1)
 class LogService {
 	private taskStack: LogTask[] = [];
-	private isInWork: boolean = false;
+	private _isInWork: boolean = false;
 	private lineNumber: number = 0;
 	private PATH_TO_FOLDER: string = process.env['PATH_TO_LOGS_FOLDER'] || 'logs';
 	private FILE_NAME: string = `${new Date().toISOString()}.txt`;
 	private PATH_TO_FILE: string = `./${this.PATH_TO_FOLDER}/${this.FILE_NAME}`;
 	private isActive: boolean = true;
+	private eHandler: EventEmitter;
+
+	constructor(_eHandler: EventEmitter) {
+		this.eHandler = _eHandler;
+	}
+
+	get isInWork(): boolean {
+		return this._isInWork;
+	}
 
 	public async init(): Promise<void> {
 		try {
@@ -23,11 +38,11 @@ class LogService {
 
 	public addTask(task: LogTask): void {
 		this.taskStack.push(task);
-		if (!this.isInWork) this.startProcessing();
+		if (!this._isInWork) this.startProcessing();
 	}
 
 	private async startProcessing(): Promise<void> {
-		this.isInWork = true;
+		this._isInWork = true;
 		let taskInd = 0;
 
 		while (this.taskStack.length > taskInd) {
@@ -45,7 +60,8 @@ class LogService {
 
 		this.taskStack.length = 0;
 		taskInd = 0;
-		this.isInWork = false;
+		this._isInWork = false;
+		this.eHandler.emit(EventTypes.Finish);
 	}
 
 	private getMessage(task: LogTask): string {
